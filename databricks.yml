@@ -1,0 +1,24 @@
+bundle:
+  name: spotify-dbx-dev-demo
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-df2be2c9-07c1.cloud.databricks.com
+      root_path: /Workspace/Users/mantofer2000@gmail.com/.bundle/spotify-dbx-dev-demo/dev
+    presets:
+      name_prefix: ""
+
+variables:
+  catalog_name:
+    default: spotify_dev
+  schema_name:
+    default: main_schema
+  prod_schema_name:
+    default: prod_schema
+

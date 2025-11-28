@@ -1,0 +1,24 @@
+resources:
+  pipelines:
+    spotify_dlt_pipeline:
+      name: spotify_analytics_pipeline
+      
+      catalog: spotify_dev
+      target: prod_schema
+      
+      serverless: true
+      
+      channel: CURRENT
+      
+      configuration:
+        source_catalog: spotify_dev
+        source_schema: main_schema
+      
+      libraries:
+        - notebook:
+            path: ../src/dlt_spotify_gold.sql
+      
+      continuous: false
+      
+      development: true
+

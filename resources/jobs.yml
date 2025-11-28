@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    spotify_data_loader:
+      name: spotify_data_loader_job
+      
+      tasks:
+        - task_key: create_catalog_schema
+          notebook_task:
+            notebook_path: ../src/setup_catalog.py
+            source: WORKSPACE
+        
+        - task_key: load_spotify_data
+          depends_on:
+            - task_key: create_catalog_schema
+          notebook_task:
+            notebook_path: ../src/load_spotify_data.py
+            source: WORKSPACE
+      
+      schedule:
+        quartz_cron_expression: "0 0 0 * * ?"
+        timezone_id: "UTC"
+        pause_status: "PAUSED"
+

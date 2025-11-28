@@ -1,0 +1,9 @@
+resources:
+  apps:
+    spotify_dashboard:
+      name: spotify-dashboard-app
+      
+      description: "Interactive dashboard for exploring Spotify Charts data with filtering and visualizations"
+      
+      source_code_path: ../apps/spotify_dashboard
+
