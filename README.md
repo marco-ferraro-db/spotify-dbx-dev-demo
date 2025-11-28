@@ -1,6 +1,85 @@
-# Spotify Databricks Development Demo
+# 🎵 Spotify Charts Analytics with Databricks
 
-This project uses Databricks Asset Bundles to automate the loading of Spotify Charts data from Kaggle and transform it through a medallion architecture using Delta Live Tables.
+A complete end-to-end data analytics project using Databricks Asset Bundles (DABs) to load, transform, and visualize Spotify Charts data through a medallion architecture with Delta Live Tables and an interactive AI-powered dashboard.
+
+> ✅ **Works with Databricks Free Tier!**
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+
+1. **Databricks Account** (Free tier works!)
+   - Sign up at [databricks.com/try-databricks](https://databricks.com/try-databricks)
+   - Use Community Edition or Free Trial
+
+2. **Databricks CLI**
+   ```bash
+   pip install databricks-cli
+   ```
+
+3. **Configure Authentication**
+   ```bash
+   databricks configure --token
+   ```
+   - **Host**: Your workspace URL (e.g., `https://dbc-xxx.cloud.databricks.com`)
+   - **Token**: Generate from User Settings → Access Tokens
+
+### 📋 Execution Steps
+
+Follow these steps in order:
+
+#### **Step 1: Deploy the Bundle**
+```bash
+cd spotify-dbx-dev-demo
+databricks bundle deploy -t dev
+```
+
+#### **Step 2: Create Catalog & Schema**
+```bash
+databricks bundle run spotify_data_loader -t dev
+```
+This job has 2 tasks:
+- Creates catalog `spotify_dev` and schemas `main_schema` & `prod_schema`
+- Loads Spotify Charts data from Kaggle (50K rows for speed)
+
+⏱️ Takes ~5-10 minutes
+
+#### **Step 3: Run DLT Pipeline**
+```bash
+databricks pipelines start spotify-analytics-pipeline
+```
+Or from UI: **Delta Live Tables** → `spotify-analytics-pipeline` → **Start**
+
+Creates 3 tables in `prod_schema`:
+- `daily_chart_positions` (Silver)
+- `monthly_artist_performance` (Gold)
+- `monthly_top_100_artists` (Gold)
+
+⏱️ Takes ~5-10 minutes
+
+#### **Step 4: Configure & Launch the App**
+
+1. **Get your SQL Warehouse ID**:
+   - Databricks UI → **SQL Warehouses**
+   - Click your warehouse → Copy ID from URL
+
+2. **Update app configuration**:
+   ```bash
+   # Edit apps/spotify_dashboard/app.yaml
+   # Replace WAREHOUSE_ID value with your actual warehouse ID
+   ```
+
+3. **Redeploy to apply changes**:
+   ```bash
+   databricks bundle deploy -t dev
+   ```
+
+4. **Access the app**:
+   - Databricks UI → **Apps** → `spotify-dashboard-app`
+   - Wait 1-2 minutes for startup
+   - Click "Open App"
+
+🎉 **Done!** You now have a fully functional Spotify analytics dashboard!
 
 ## Project Structure
 
@@ -23,23 +102,16 @@ spotify-dbx-dev-demo/
 └── README.md
 ```
 
-## Prerequisites
+## 🎯 What You'll Build
 
-1. **Databricks CLI** - Install the Databricks CLI:
-   ```bash
-   pip install databricks-cli
-   ```
+This project demonstrates:
 
-2. **Authentication** - Configure authentication to your Databricks workspace:
-   ```bash
-   databricks configure --token
-   ```
-   - Host: `https://dbc-df2be2c9-07c1.cloud.databricks.com`
-   - Token: Your personal access token
-
-3. **Kaggle Credentials** - The job requires Kaggle API credentials. You'll need to:
-   - Create a Kaggle account and generate an API token
-   - Set up Kaggle credentials in your Databricks workspace as secrets
+- **📥 Data Ingestion**: Automated loading from Kaggle
+- **🏗️ Medallion Architecture**: Bronze → Silver → Gold layers
+- **🔄 Delta Live Tables**: Declarative data transformations with quality checks
+- **📊 Interactive Dashboard**: Streamlit app with 4 analytical views
+- **🤖 AI Assistant**: LLM-powered chatbot for data insights
+- **🚀 Infrastructure as Code**: Everything deployed with Databricks Asset Bundles
 
 ## What This Bundle Does
 
@@ -71,133 +143,42 @@ main_schema              prod_schema                prod_schema
    - Creates aggregated metrics by artist and region
    - Tables: `spotify_charts_silver`, `spotify_charts_gold`, `top_artists_by_region`
 
-## Deployment
 
-### Deploy the Bundle
 
-```bash
-# Validate the bundle configuration
-databricks bundle validate
+## 📂 Project Architecture
 
-# Deploy to the dev target
-databricks bundle deploy -t dev
+```
+Bronze Layer (main_schema)     Silver Layer (prod_schema)      Gold Layer (prod_schema)
+────────────────────────       ─────────────────────────       ─────────────────────────
+spotify_charts              →   daily_chart_positions       →   monthly_artist_performance
+(raw Kaggle data)              (cleaned & validated)           monthly_top_100_artists
+                                                               (aggregated metrics)
 ```
 
-### Run the Data Loader Job (Bronze Layer)
+## ⚙️ Configuration
 
-```bash
-# Run the job to load raw data
-databricks bundle run spotify_data_loader -t dev
-```
-
-### Run the DLT Pipeline (Silver/Gold Layers)
-
-After the data loader job completes:
-
-```bash
-# Start the DLT pipeline
-databricks pipelines start spotify_dlt_pipeline
-```
-
-Or run from the Databricks UI:
-1. Navigate to **Delta Live Tables**
-2. Find `spotify_analytics_pipeline`
-3. Click **Start**
-
-### Deploy the Dashboard App
-
-Quick start:
-
-```bash
-# 1. Update apps/spotify_dashboard/app.yaml with your SQL Warehouse ID
-# Replace <your-warehouse-id> with your actual SQL Warehouse ID
-
-# 2. Deploy the bundle
-databricks bundle deploy -t dev
-```
-
-Access the app in Databricks UI → **Apps** → `spotify-dashboard-app`
-
-**Alternatively, run locally:**
-```bash
-cd apps/spotify_dashboard
-pip install -r requirements.txt
-
-# Set environment variables
-export DATABRICKS_SERVER_HOSTNAME="dbc-df2be2c9-07c1.cloud.databricks.com"
-export DATABRICKS_HTTP_PATH="/sql/1.0/warehouses/<your-warehouse-id>"
-export DATABRICKS_TOKEN="<your-token>"
-
-# Run the app
-streamlit run app.py
-```
-
-## Pipeline Structure
-
-### Job: `spotify_data_loader_job` (Bronze Layer)
-
-Two tasks that create the raw data layer:
-
-1. **create_catalog_schema**: Sets up the Unity Catalog structure
-   - Creates catalog `spotify_dev`
-   - Creates schemas `main_schema` and `prod_schema`
-
-2. **load_spotify_data**: Downloads and loads the data
-   - Downloads Spotify Charts dataset from Kaggle
-   - Loads CSV data into a Delta table (50K rows for dev speed)
-   - Adds metadata columns (load_timestamp, source_file)
-   - Creates table: `spotify_dev.main_schema.spotify_charts`
-
-### DLT Pipeline: `spotify_dlt_pipeline` (Silver/Gold Layers)
-
-Transforms raw data through quality checks and aggregations:
-
-1. **Silver Table**: `spotify_charts_silver`
-   - Formats date column properly
-   - Drops unnecessary columns (load_timestamp, source_file, chart)
-   - Validates no null values in critical fields
-   - Extracts year, month, day components
-
-2. **Gold Tables**: 
-   - `spotify_charts_gold`: Aggregated metrics by artist, region, and month
-   - `top_artists_by_region`: Top 100 artists per region per month
-
-See [APP_SETUP.md](./APP_SETUP.md) for detailed pipeline documentation.
-
-### Databricks App: `spotify_dashboard_app` (Interactive Analytics)
-
-An interactive Streamlit dashboard for exploring the data:
-
-**Features:**
-- 📊 **Overview Dashboard**: Key metrics, regional breakdown, monthly trends
-- 🎤 **Artist Performance**: Top artists, comparisons, detailed metrics
-- 📈 **Chart Positions**: Daily chart tracking, song-level analysis
-
-See [APP_SETUP.md](./APP_SETUP.md) for deployment instructions.
-
-## Configuration
-
-You can customize the catalog and schema names in `databricks.yml`:
-
+**Catalog & Schemas** (`databricks.yml`):
 ```yaml
 variables:
-  catalog_name:
-    default: spotify_dev
-  schema_name:
-    default: main_schema
+  catalog_name: spotify_dev
+  schema_name: main_schema
+  prod_schema_name: prod_schema
 ```
 
-## Monitoring
+**Sample Size** (`src/load_spotify_data.py`):
+- Default: 50,000 rows (fast for development)
+- Change `SAMPLE_SIZE = None` to load all data
 
-After deployment, you can monitor your job in the Databricks workspace:
-- Navigate to **Workflows** → **Jobs**
-- Find `spotify_data_loader_job`
-- View run history and logs
+## 📊 Key Components
 
-## Notes
+| Component | Type | Description |
+|-----------|------|-------------|
+| `spotify_data_loader` | Job | Creates catalog/schema & loads Kaggle data |
+| `spotify-analytics-pipeline` | DLT Pipeline | Transforms data (Bronze→Silver→Gold) |
+| `spotify-dashboard-app` | Databricks App | Interactive analytics dashboard |
 
-- The job is scheduled to run daily at midnight UTC but is initially paused
-- The notebooks use single-node clusters for the setup task and a 2-worker cluster for data loading
-- Data is loaded using `overwrite` mode, so each run will replace the existing data
-- The kagglehub library is automatically installed via PyPI when the job runs
+
+## 📝 License
+
+This is a demo project for learning purposes.
 
