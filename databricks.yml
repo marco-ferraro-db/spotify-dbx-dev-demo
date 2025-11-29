@@ -9,8 +9,8 @@ targets:
     mode: development
     default: true
     workspace:
-      host: https://dbc-df2be2c9-07c1.cloud.databricks.com
-      root_path: /Workspace/Users/mantofer2000@gmail.com/.bundle/spotify-dbx-dev-demo/dev
+      host: <your-databricks-ws-url>
+      root_path: /Workspace/Users/<your-user-name>/.bundle/spotify-dbx-dev-demo/dev
     presets:
       name_prefix: ""
 
